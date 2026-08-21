@@ -33,10 +33,20 @@ export const InvoicesList = () => {
     setLoading(true); setError('');
     try {
       const res = await api.get('/invoices', { params: { search } });
-      if (res.data?.success) setInvoices(res.data.invoices || []);
-      else setError('Failed to load invoices.');
-    } catch { setError('Could not reach the server.'); }
-    finally { setLoading(false); }
+      if (res.data?.success && Array.isArray(res.data.invoices)) {
+        setInvoices(res.data.invoices);
+        localStorage.setItem('pms_invoices_list', JSON.stringify(res.data.invoices));
+        setLoading(false);
+        return;
+      }
+    } catch (e) {}
+
+    try {
+      const saved = localStorage.getItem('pms_invoices_list');
+      if (saved) setInvoices(JSON.parse(saved));
+      else setInvoices([]);
+    } catch (e) {}
+    setLoading(false);
   }, [search]);
 
   const fetchDropdowns = useCallback(async () => {

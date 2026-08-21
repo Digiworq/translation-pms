@@ -1,11 +1,7 @@
 -- ========================================================
 -- LingoTech PMS Complete MySQL Database Dump
 -- Schema & Initial Seed Data
--- Database: lingotech_pms
 -- ========================================================
-
-CREATE DATABASE IF NOT EXISTS `lingotech_pms`;
-USE `lingotech_pms`;
 
 -- --------------------------------------------------------
 -- Table structure for User

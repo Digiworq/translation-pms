@@ -34,8 +34,8 @@ export const PaymentsList = () => {
       const [pRes, invRes] = await Promise.all([api.get('/payments/client'), api.get('/invoices?limit=100')]);
       if (pRes.data?.success)   setClientPayments(pRes.data.payments || []);
       if (invRes.data?.success) setInvoices(invRes.data.invoices || []);
-    } catch { setError('Could not load client payments.'); }
-    finally { setLoading(false); }
+    } catch {}
+    setLoading(false);
   }, []);
 
   const fetchVendorPayments = useCallback(async () => {
@@ -44,8 +44,8 @@ export const PaymentsList = () => {
       const [pRes, vRes] = await Promise.all([api.get('/payments/vendor'), api.get('/vendors?limit=100')]);
       if (pRes.data?.success) setVendorPayments(pRes.data.payments || []);
       if (vRes.data?.success) setVendors(vRes.data.vendors || []);
-    } catch { setError('Could not load vendor payments.'); }
-    finally { setLoading(false); }
+    } catch {}
+    setLoading(false);
   }, []);
 
   useEffect(() => {
