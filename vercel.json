@@ -5,6 +5,34 @@
       "destination": "/api/index.js"
     },
     {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/projects(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/clients(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/vendors(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/invoices(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/payments(.*)",
+      "destination": "/index.html"
+    },
+    {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
