@@ -46,21 +46,6 @@ const DEFAULT_PROJECTS = [
     grossProfit: 37500,
     status: 'COMPLETED',
     deadline: '2026-08-22T00:00:00.000Z'
-  },
-  {
-    id: 'prj-3',
-    projectCode: 'PRJ-2026-0003',
-    projectName: 'Mobile Banking App UI String Localization',
-    clientName: 'Apex Financial Systems',
-    projectType: 'Localization',
-    sourceLang: 'English',
-    targetLang: 'Japanese',
-    wordCount: 8000,
-    clientAmount: 28000,
-    totalVendorCost: 12000,
-    grossProfit: 16000,
-    status: 'DELIVERED',
-    deadline: '2026-08-30T00:00:00.000Z'
   }
 ];
 
@@ -69,27 +54,8 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const isVendor = user?.role === 'VENDOR';
 
-  const actualVendorsCount = (() => {
-    try {
-      const saved = localStorage.getItem('pms_vendors_list');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed.length;
-      }
-    } catch (e) {}
-    return 1;
-  })();
-
-  const actualClientsCount = (() => {
-    try {
-      const saved = localStorage.getItem('pms_clients_list');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed.length;
-      }
-    } catch (e) {}
-    return 3;
-  })();
+  const [liveVendorsCount, setLiveVendorsCount] = useState(2);
+  const [liveClientsCount, setLiveClientsCount] = useState(2);
 
   const [stats, setStats] = useState(null);
   const [recentProjects, setRecentProjects] = useState([]);
@@ -100,6 +66,40 @@ export const Dashboard = () => {
 
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
+
+    // 1. Fetch live Vendors count directly
+    try {
+      const vRes = await api.get('/vendors');
+      if (vRes.data?.success && Array.isArray(vRes.data.vendors)) {
+        setLiveVendorsCount(vRes.data.vendors.length);
+      } else {
+        const savedV = localStorage.getItem('pms_vendors_list');
+        if (savedV) setLiveVendorsCount(JSON.parse(savedV).length);
+      }
+    } catch (e) {
+      try {
+        const savedV = localStorage.getItem('pms_vendors_list');
+        if (savedV) setLiveVendorsCount(JSON.parse(savedV).length);
+      } catch (err) {}
+    }
+
+    // 2. Fetch live Clients count directly
+    try {
+      const cRes = await api.get('/clients');
+      if (cRes.data?.success && Array.isArray(cRes.data.clients)) {
+        setLiveClientsCount(cRes.data.clients.length);
+      } else {
+        const savedC = localStorage.getItem('pms_clients_list');
+        if (savedC) setLiveClientsCount(JSON.parse(savedC).length);
+      }
+    } catch (e) {
+      try {
+        const savedC = localStorage.getItem('pms_clients_list');
+        if (savedC) setLiveClientsCount(JSON.parse(savedC).length);
+      } catch (err) {}
+    }
+
+    // 3. Fetch Dashboard & Projects stats
     try {
       let localProjList = DEFAULT_PROJECTS;
       try {
@@ -110,20 +110,13 @@ export const Dashboard = () => {
         }
       } catch (e) {}
 
-      // Attempt API fetch
       try {
-        const res = await api.get('/dashboard', { params: { _t: Date.now() } });
-        if (res.data?.success && res.data.stats) {
-          setStats(res.data.stats);
-          setProjectsByStatus(res.data.charts?.projectsByStatus || []);
-          setProjectsByType(res.data.charts?.projectsByType || []);
-          setRecentProjects(res.data.recentProjects || localProjList);
-          setLoading(false);
-          return;
+        const res = await api.get('/projects', { params: { _t: Date.now() } });
+        if (res.data?.success && Array.isArray(res.data.projects) && res.data.projects.length > 0) {
+          localProjList = res.data.projects;
         }
       } catch (e) {}
 
-      // Fallback calculation from local state
       const totalProjects = localProjList.length;
       const activeProjects = localProjList.filter(p => ['NEW', 'ASSIGNED', 'IN_PROGRESS', 'UNDER_REVIEW'].includes(p.status)).length;
       const completedProjects = localProjList.filter(p => ['COMPLETED', 'DELIVERED'].includes(p.status)).length;
@@ -145,9 +138,7 @@ export const Dashboard = () => {
         vendorExpenses,
         profit,
         outstandingClientPayments,
-        pendingVendorPayments,
-        totalClients: actualClientsCount,
-        totalVendors: actualVendorsCount
+        pendingVendorPayments
       });
 
       const statusCounts = {};
@@ -179,23 +170,21 @@ export const Dashboard = () => {
     } finally {
       setLoading(false);
     }
-  }, [actualClientsCount, actualVendorsCount]);
+  }, []);
 
   useEffect(() => { fetchDashboard(); }, [fetchDashboard]);
 
   const s = stats || {
-    totalProjects: 3,
-    activeProjects: 1,
-    completedProjects: 2,
+    totalProjects: 2,
+    activeProjects: 2,
+    completedProjects: 0,
     pendingProjects: 1,
     overdueProjects: 0,
-    revenue: 118000,
-    vendorExpenses: 43500,
-    profit: 74500,
-    outstandingClientPayments: 35400,
-    pendingVendorPayments: 43500,
-    totalClients: actualClientsCount,
-    totalVendors: actualVendorsCount
+    revenue: 58000,
+    vendorExpenses: 21000,
+    profit: 37000,
+    outstandingClientPayments: 17400,
+    pendingVendorPayments: 21000
   };
 
   return (
@@ -266,8 +255,8 @@ export const Dashboard = () => {
           {/* Secondary row */}
           {!isVendor && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              <StatCard title="TOTAL CLIENTS" value={actualClientsCount} subtitle="Active client accounts" icon={Building2} color="indigo" />
-              <StatCard title="ACTIVE VENDORS" value={actualVendorsCount} subtitle="Translators & reviewers" icon={Users} color="blue" />
+              <StatCard title="TOTAL CLIENTS" value={liveClientsCount} subtitle="Active client accounts" icon={Building2} color="indigo" />
+              <StatCard title="ACTIVE VENDORS" value={liveVendorsCount} subtitle="Translators & reviewers" icon={Users} color="blue" />
               <StatCard
                 title="PENDING VENDOR PAYABLES"
                 value={`₹${(s.pendingVendorPayments || 0).toLocaleString('en-IN')}`}
