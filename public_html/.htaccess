@@ -1,0 +1,16 @@
+# Apache Rewrite Rules for Single Page Application (React) & Node.js API Proxy
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Direct API requests to Node.js Backend App
+  RewriteRule ^api/(.*)$ http://127.0.0.1:5000/api/$1 [P,L]
+
+  # Direct static files if they exist
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # Fallback all other SPA routes to index.html
+  RewriteRule ^ index.html [L]
+</IfModule>

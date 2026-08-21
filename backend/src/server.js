@@ -86,7 +86,17 @@ mainRouter.use('/audit-logs', auditLogRoutes);
 mainRouter.use('/settings', settingRoutes);
 
 app.use('/api', mainRouter);
-app.use('/', mainRouter);
+
+// Serve React Static Frontend directly from Express (Guarantees ZERO blank screens!)
+const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDistPath));
+
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({ success: false, message: 'API Route Not Found' });
+  }
+  res.sendFile(path.join(frontendDistPath, 'index.html'));
+});
 
 // Global Error Handler
 app.use(errorHandler);

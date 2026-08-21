@@ -1,0 +1,15 @@
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /pms/
+
+  # Pass API requests to Node.js backend
+  RewriteRule ^api/(.*)$ http://127.0.0.1:5000/api/$1 [P,L]
+
+  # Serve static files in /pms/assets/ or /pms/ directly
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # SPA Routing Fallback to /pms/index.html
+  RewriteRule ^ index.html [L]
+</IfModule>

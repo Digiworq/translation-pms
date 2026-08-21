@@ -14,7 +14,8 @@ const getBaseURL = () => {
     return 'http://localhost:5000/api';
   }
 
-  return '/api';
+  // In cPanel production under /pms/
+  return '/pms/api';
 };
 
 const api = axios.create({

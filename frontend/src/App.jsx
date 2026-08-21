@@ -1,5 +1,5 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppLayout } from './components/Layout/AppLayout';
 import { Login } from './pages/Login';
@@ -34,7 +34,7 @@ const ProtectedRoute = ({ children }) => {
 export const App = () => {
   return (
     <AuthProvider>
-      <Router>
+      <Router basename="/pms">
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route
@@ -59,7 +59,7 @@ export const App = () => {
             <Route path="users" element={<UsersList />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
     </AuthProvider>
