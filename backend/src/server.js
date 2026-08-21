@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
 
 const errorHandler = require('./middleware/errorHandler');
@@ -87,15 +88,25 @@ mainRouter.use('/settings', settingRoutes);
 
 app.use('/api', mainRouter);
 
-// Serve React Static Frontend directly from Express (Guarantees ZERO blank screens!)
+// Serve React Static Frontend directly if built, otherwise serve API status
 const frontendDistPath = path.join(__dirname, '../../frontend/dist');
-app.use(express.static(frontendDistPath));
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
+}
 
 app.get('*', (req, res) => {
   if (req.path.startsWith('/api')) {
     return res.status(404).json({ success: false, message: 'API Route Not Found' });
   }
-  res.sendFile(path.join(frontendDistPath, 'index.html'));
+  const frontendIndex = path.join(frontendDistPath, 'index.html');
+  if (fs.existsSync(frontendIndex)) {
+    return res.sendFile(frontendIndex);
+  }
+  res.json({
+    success: true,
+    message: 'PMS Express API Backend is online. Access endpoints at /api/*',
+    healthCheck: '/api/health'
+  });
 });
 
 // Global Error Handler
