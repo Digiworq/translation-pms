@@ -84,31 +84,37 @@ export const Login = () => {
 
         {/* Quick Demo Accounts Buttons */}
         <div className="mt-8 pt-6 border-t border-slate-100">
-          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider text-center mb-3">Quick Demo Accounts (1-Click Login)</p>
+          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider text-center mb-3">
+            Quick 1-Click Role Logins
+          </p>
           <div className="grid grid-cols-2 gap-2">
             <button
+              type="button"
               onClick={() => handleQuickDemoLogin('admin@pms.com')}
               className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg border border-slate-200/80 transition-colors text-left flex items-center gap-1.5"
             >
               <span>👑 Super Admin</span>
             </button>
             <button
+              type="button"
               onClick={() => handleQuickDemoLogin('pm@pms.com')}
               className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg border border-slate-200/80 transition-colors text-left flex items-center gap-1.5"
             >
               <span>📁 Project Manager</span>
             </button>
             <button
-              onClick={() => handleQuickDemoLogin('accounts@pms.com')}
-              className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg border border-slate-200/80 transition-colors text-left flex items-center gap-1.5"
-            >
-              <span>💳 Accounts</span>
-            </button>
-            <button
+              type="button"
               onClick={() => handleQuickDemoLogin('translator@pms.com')}
               className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg border border-slate-200/80 transition-colors text-left flex items-center gap-1.5"
             >
-              <span>🌐 Translator</span>
+              <span>🌐 Vendor / Translator</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickDemoLogin('client@pms.com')}
+              className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg border border-slate-200/80 transition-colors text-left flex items-center gap-1.5"
+            >
+              <span>🏢 Client Account</span>
             </button>
           </div>
         </div>

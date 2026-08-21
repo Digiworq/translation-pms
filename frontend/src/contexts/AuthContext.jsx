@@ -90,7 +90,7 @@ export const AuthProvider = ({ children }) => {
       await api.post('/auth/logout');
     } catch (e) {
     } finally {
-      window.location.href = '/login';
+      window.location.href = '/#/login';
     }
   };
 
