@@ -38,74 +38,36 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Core Middlewares
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cookieParser(process.env.COOKIE_SECRET || 'pms_cookie_secret_key_987654'));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
-// Root API info endpoint
-app.get('/', (req, res) => {
-  res.json({
-    success: true,
-    message: 'Translation & Localization PMS REST API Server is active.',
-    health: 'http://localhost:5000/api/health',
-    testDb: 'http://localhost:5000/api/test-db'
-  });
+// Database Health check endpoint
+app.get('/api/test-db', (req, res) => {
+  res.json({ success: true, message: 'Server & DB route online.' });
+});
+app.get('/test-db', (req, res) => {
+  res.json({ success: true, message: 'Server & DB route online.' });
 });
 
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'UP',
-    timestamp: new Date().toISOString(),
-    service: 'Translation & Localization PMS API'
-  });
-});
+// Dual Mount Router (Supports both Vercel Serverless Rewrites and Direct Localhost requests)
+const mainRouter = express.Router();
+mainRouter.use('/auth', authRoutes);
+mainRouter.use('/users', userRoutes);
+mainRouter.use('/clients', clientRoutes);
+mainRouter.use('/vendors', vendorRoutes);
+mainRouter.use('/projects', projectRoutes);
+mainRouter.use('/files', fileRoutes);
+mainRouter.use('/invoices', invoiceRoutes);
+mainRouter.use('/payments', paymentRoutes);
+mainRouter.use('/dashboard', dashboardRoutes);
+mainRouter.use('/reports', reportRoutes);
+mainRouter.use('/notifications', notificationRoutes);
+mainRouter.use('/audit-logs', auditLogRoutes);
+mainRouter.use('/settings', settingRoutes);
 
-// Direct MongoDB Verification Endpoint
-app.get('/api/test-db', async (req, res) => {
-  try {
-    let db = getDb();
-    if (!db) db = await connectMongoDB();
-
-    if (!db) {
-      return res.status(500).json({ success: false, message: 'MongoDB Not Connected' });
-    }
-
-    const projects = await db.collection('projects').find({}).toArray();
-    const clients = await db.collection('clients').find({}).toArray();
-    const vendors = await db.collection('vendors').find({}).toArray();
-
-    return res.json({
-      success: true,
-      database: DB_NAME,
-      connectionStatus: 'CONNECTED & ACTIVE',
-      collectionsCount: {
-        projects: projects.length,
-        clients: clients.length,
-        vendors: vendors.length
-      },
-      projectsList: projects
-    });
-  } catch (error) {
-    return res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/clients', clientRoutes);
-app.use('/api/vendors', vendorRoutes);
-app.use('/api/projects', projectRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/invoices', invoiceRoutes);
-app.use('/api/payments', paymentRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/reports', reportRoutes);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/audit-logs', auditLogRoutes);
-app.use('/api/settings', settingRoutes);
+app.use('/api', mainRouter);
+app.use('/', mainRouter);
 
 // Error Handler Middleware
 app.use(errorHandler);
@@ -118,4 +80,3 @@ if (require.main === module) {
 }
 
 module.exports = app;
-
