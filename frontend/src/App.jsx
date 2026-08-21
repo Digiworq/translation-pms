@@ -34,7 +34,7 @@ const ProtectedRoute = ({ children }) => {
 export const App = () => {
   return (
     <AuthProvider>
-      <Router basename="/pms">
+      <Router>
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route

@@ -12,22 +12,26 @@ export const Login = () => {
   const [email, setEmail] = useState('admin@pms.com');
   const [password, setPassword] = useState('Admin@123456');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleLogin = async (e) => {
     if (e) e.preventDefault();
-    setLoading(true);
-    await login(email, password);
+    setLoading(true); setError('');
+    const result = await login(email, password);
     setLoading(false);
-    navigate('/dashboard', { replace: true });
+    if (result?.success) {
+      navigate('/dashboard', { replace: true });
+    } else {
+      setError(result?.message || 'Invalid credentials. Please try again.');
+    }
   };
 
-  const handleQuickDemoLogin = async (demoEmail) => {
-    setEmail(demoEmail);
-    setPassword('Admin@123456');
+  const handleQuickDemoLogin = async (demoEmail, demoPassword = 'Admin@123456') => {
+    setEmail(demoEmail); setPassword(demoPassword); setError('');
     setLoading(true);
-    await login(demoEmail, 'Admin@123456');
+    const result = await login(demoEmail, demoPassword);
     setLoading(false);
-    navigate('/dashboard', { replace: true });
+    if (result?.success) navigate('/dashboard', { replace: true });
   };
 
   return (
@@ -47,6 +51,12 @@ export const Login = () => {
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">
+          {error && (
+            <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2.5 rounded-lg">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
           <div>
             <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">Email Address</label>
             <div className="relative">
@@ -109,12 +119,9 @@ export const Login = () => {
             >
               <span>🌐 Vendor / Translator</span>
             </button>
-            <button
-              type="button"
-              onClick={() => handleQuickDemoLogin('client@pms.com')}
-              className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg border border-slate-200/80 transition-colors text-left flex items-center gap-1.5"
-            >
-              <span>🏢 Client Account</span>
+            <button type="button" onClick={() => handleQuickDemoLogin('accounts@pms.com')}
+              className="px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 rounded-lg border border-slate-200/80 transition-colors text-left flex items-center gap-1.5">
+              <span>💰 Accounts</span>
             </button>
           </div>
         </div>
