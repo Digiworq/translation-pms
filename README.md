@@ -1,145 +1,88 @@
-# LingoTech PMS — Full-Stack Translation & Localization Project Management System
+# 🌐 LingoTech PMS - Translation & Localization Project Management System
 
-A production-grade, highly secure, full-stack **Project Management System (PMS)** custom-built for professional Translation & Localization agencies. Built with **React, Vite, Node.js, Express.js, Prisma ORM, and MySQL**.
-
----
-
-## 📖 Architecture & Data Flow
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    React + Vite Frontend                    │
-│   (Tailwind CSS, Lucide Icons, Recharts, Axios, React Router)│
-└──────────────────────────────┬──────────────────────────────┘
-                               │ HTTP / REST API (JWT Cookie)
-┌──────────────────────────────▼──────────────────────────────┐
-│                    Node.js / Express Backend                │
-│   (Auth, RBAC Middleware, Rate Limiting, Audit Logger)      │
-└──────────────────────────────┬──────────────────────────────┘
-                               │ Prisma ORM
-┌──────────────────────────────▼──────────────────────────────┐
-│                        MySQL Database                       │
-│  (Users, Roles, Clients, Vendors, Projects, Files, Invoices) │
-└─────────────────────────────────────────────────────────────┘
-```
-
-> **Security Guarantee**: React never communicates directly with MySQL. All database access passes through Express REST controllers with role-based validation and resource authorization.
+LingoTech PMS is an enterprise-grade Project Management System engineered specifically for Translation & Localization agencies. It features role-based access control, automated project metrics, dual database sync (MySQL & MongoDB), client billing, vendor payouts, and interactive visual dashboards.
 
 ---
 
-## 🛠️ Technology Stack
+## 📁 Repository Structure
 
-- **Frontend**: React 18, Vite, Tailwind CSS, Lucide Icons, Recharts, Axios, React Router v6.
-- **Backend**: Node.js, Express.js, JWT (`jsonwebtoken`), bcrypt password hashing, `cookie-parser`, `cors`, `helmet`, `express-rate-limit`, `multer`.
-- **Database & ORM**: MySQL 8.0+, Prisma ORM (`@prisma/client`, `prisma`).
-
----
-
-## 🚀 Quick Setup & Installation Guide
-
-### Prerequisites
-- Node.js v18.0+
-- MySQL Server 8.0+ running locally on port `3306`
-
-### 1. Database & Backend Configuration
-
-You can navigate into the subdirectories or run convenience commands from the root folder:
-
-#### Option A: Running from Subdirectories
-```bash
-# Backend Setup
-cd backend
-npm install
-npm run prisma:generate
-npm run prisma:migrate
-npm run prisma:seed
-npm run dev
-
-# Frontend Setup (in a second terminal)
-cd frontend
-npm install
-npm run dev
-```
-
-#### Option B: Running from Root Directory (`translation-pms`)
-```bash
-npm run install:all      # Installs backend & frontend dependencies
-npm run prisma:generate  # Generates Prisma client
-npm run prisma:migrate   # Migrates database
-npm run prisma:seed      # Seeds demo accounts and data
-npm run dev:backend      # Launches Backend on http://localhost:5000
-npm run dev:frontend     # Launches Frontend on http://localhost:5173
-```
-
----
-
-## 🔑 Pre-Configured Demo Credentials
-
-Use these pre-seeded accounts to test different Role-Based Access Control (RBAC) levels:
-
-| Role | Email | Password | Scope & Permissions |
-| :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin@pms.com` | `Admin@123456` | Full system control, audit logs, user admin, settings |
-| **Project Manager** | `pm@pms.com` | `Admin@123456` | Create/manage projects, assign vendors, track deadlines, file versioning |
-| **Accounts** | `accounts@pms.com` | `Admin@123456` | Manage client invoices, record client payments, vendor payouts, financial reports |
-| **Vendor / Translator** | `translator@pms.com` | `Vendor@123456` | View assigned projects only, upload work, download authorized files |
-
----
-
-## 🔒 Security Architecture
-
-1. **Authentication**: Passwords hashed using `bcrypt` (10 salt rounds). JWT authentication tokens issued via secure HTTP-Only cookies.
-2. **Authorization (RBAC)**: All protected API endpoints verify user identity and check permission levels using Express `requireRole(['SUPER_ADMIN', 'ADMIN', ...])` middleware.
-3. **Data Privacy**: Client revenue, total vendor costs, and profit margins are automatically filtered out when accessed by Vendor role accounts.
-4. **File Security**: Files stored in private directory storage (`/backend/uploads`), served strictly through authorized streaming endpoints. Dangerous executable files (`.exe`, `.sh`, `.bat`) are blocked by MIME and extension validation.
-5. **Rate Limiting & Headers**: Helmet security headers enabled, along with IP rate limiting (300 requests per 15 min window).
-6. **Audit Logs**: Immutable audit log tracks user actions, IP addresses, entity IDs, and before/after state snapshots.
-
----
-
-## 📂 Project Structure
-
-```
+```text
 translation-pms/
-├── backend/
-│   ├── prisma/
-│   │   ├── schema.prisma       # Database models, foreign keys & indexes
-│   │   └── seed.js             # Initial database seed script
-│   ├── src/
-│   │   ├── config/             # Prisma client & JWT setup
-│   │   ├── controllers/        # Express REST API business logic
-│   │   ├── middleware/         # Auth, RBAC & Centralized Error Handler
-│   │   ├── routes/             # Express routing modules
-│   │   ├── utils/              # Audit logger & auto code generators
-│   │   └── server.js           # Server entry point
-│   ├── package.json
-│   └── .env.example
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Layout/         # Sidebar, Navbar, AppLayout
-│   │   │   └── UI/             # Badge, Button, Card, Modal, Tabs, StatCard
-│   │   ├── contexts/           # AuthContext provider
-│   │   ├── pages/              # 12 Full Module Views
-│   │   ├── services/           # Axios API client
-│   │   ├── App.jsx             # React Router setup
-│   │   └── main.jsx            # React root entry point
-│   ├── package.json
-│   ├── vite.config.js
-│   └── tailwind.config.js
-└── README.md
+├── frontend/                 # React (Vite) + Tailwind CSS UI
+├── backend/                  # Node.js + Express REST API
+│   ├── src/controllers/     # Business logic & MySQL controllers
+│   ├── prisma/               # Prisma Schema & Database Models
+│   └── src/server.js         # Server entry point
+├── lingotech_pms.sql         # Full Standalone MySQL Database Dump File
+├── DATABASE_SETUP_GUIDE.md   # Step-by-Step Database Import & Setup Guide
+├── vercel.json               # Vercel Deployment Configuration
+└── push_to_github.bat        # Automated GitHub Push Script
 ```
 
 ---
 
-## 💾 Database Backup & Recovery
+## ⚡ Quick Start (Local Setup)
 
-### MySQL Backup Command
+### 1. Install Dependencies
 ```bash
-mysqldump -u root -p translation_pms > pms_backup_$(date +%F).sql
+npm run install:all
 ```
 
-### MySQL Restore Command
-```bash
-mysql -u root -p translation_pms < pms_backup_YYYY-MM-DD.sql
+### 2. Configure Database & Environment
+Open `backend/.env` (or copy from `backend/.env.example`) and set your database connection:
+```env
+DATABASE_URL="mysql://root:YOUR_PASSWORD@localhost:3306/lingotech_pms"
+PORT=5000
 ```
+
+### 3. Initialize Database
+```bash
+npm run prisma:migrate
+npm run seed:mysql
+```
+
+*(For detailed alternative database import options, see [DATABASE_SETUP_GUIDE.md](DATABASE_SETUP_GUIDE.md)).*
+
+### 4. Run Development Server
+```bash
+npm run dev
+```
+Open **`http://localhost:5173`** in your browser!
+
+---
+
+## 🗄️ Database Setup Instructions
+
+For clients or developers importing the database into a fresh MySQL installation, please refer to the comprehensive guide in **[DATABASE_SETUP_GUIDE.md](DATABASE_SETUP_GUIDE.md)**:
+
+- **Method 1**: Automated Prisma Migration & Seed (`npm run prisma:migrate && npm run seed:mysql`)
+- **Method 2**: MySQL Command Line Import (`mysql -u root -p lingotech_pms < lingotech_pms.sql`)
+- **Method 3**: MySQL Workbench GUI Import
+
+---
+
+## 🚀 Deployment to Vercel
+
+This repository is pre-configured for 1-click deployment on **Vercel**:
+
+1. Push this repository to your GitHub account using `push_to_github.bat`.
+2. Go to **[Vercel.com](https://vercel.com)** and click **"Add New Project"**.
+3. Select this repository (`translation-pms`).
+4. In Project Settings -> **Environment Variables**, set:
+   ```env
+   DATABASE_URL="mysql://user:password@your-cloud-db-host:3306/lingotech_pms"
+   ```
+5. Click **Deploy**!
+
+---
+
+## 🔒 Default Super Admin Credentials
+
+- **Role**: Executive Super Admin
+- **Email**: `admin@pms.com`
+- **Permissions**: Full system management (Create/Edit Projects, Clients, Vendors, Delete Controls).
+
+---
+
+## 📜 License
+Privately owned software for Enterprise Translation & Localization Management.
