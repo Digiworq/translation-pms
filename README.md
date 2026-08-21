@@ -1,88 +1,130 @@
-# 🌐 LingoTech PMS - Translation & Localization Project Management System
+# LingoTech PMS — Enterprise Translation & Localization Operations Platform
 
-LingoTech PMS is an enterprise-grade Project Management System engineered specifically for Translation & Localization agencies. It features role-based access control, automated project metrics, dual database sync (MySQL & MongoDB), client billing, vendor payouts, and interactive visual dashboards.
+A full-stack, enterprise-grade Translation Management System (PMS) built with React, Node.js/Express, Prisma ORM, and MySQL.
 
 ---
 
-## 📁 Repository Structure
+## 🏗️ Production Architecture
 
 ```text
-translation-pms/
-├── frontend/                 # React (Vite) + Tailwind CSS UI
-├── backend/                  # Node.js + Express REST API
-│   ├── src/controllers/     # Business logic & MySQL controllers
-│   ├── prisma/               # Prisma Schema & Database Models
-│   └── src/server.js         # Server entry point
-├── lingotech_pms.sql         # Full Standalone MySQL Database Dump File
-├── DATABASE_SETUP_GUIDE.md   # Step-by-Step Database Import & Setup Guide
-├── vercel.json               # Vercel Deployment Configuration
-└── push_to_github.bat        # Automated GitHub Push Script
+USERS (Browser)
+   │
+   ▼ HTTPS
+┌─────────────────────────────────┐
+│ React Frontend                  │
+│ (Hosted on Vercel)              │
+│ https://translation-pms.vercel  │
+└────────────────┬────────────────┘
+                 │ HTTPS API Calls (VITE_API_URL)
+                 ▼
+┌─────────────────────────────────┐
+│ Production Express Backend      │
+│ (Hosted on Render / Railway)    │
+│ https://pms-api.onrender.com    │
+└────────────────┬────────────────┘
+                 │ Prisma ORM
+                 ▼
+┌─────────────────────────────────┐
+│ Managed MySQL Database          │
+│ (Hosted on Railway / Aiven)     │
+└─────────────────────────────────┘
 ```
 
 ---
 
-## ⚡ Quick Start (Local Setup)
+## 🚀 Step-by-Step Production Deployment Guide
 
-### 1. Install Dependencies
+### STEP 1: Deploy Hosted MySQL Database (Railway / Aiven / Managed MySQL)
+
+1. Sign up for a free account on **[Railway.app](https://railway.app)** or **[Render.com](https://render.com)**.
+2. Click **New Project** -> Select **Provision MySQL**.
+3. Railway creates your live MySQL database in 5 seconds and gives you a connection string:
+   `mysql://root:password@host:3306/railway`
+4. Copy your `MYSQL_URL` connection string.
+
+---
+
+### STEP 2: Import Database Schema & Seed Data
+
+Run Prisma migrations or import `lingotech_pms.sql` to initialize all 16 MySQL tables:
+
 ```bash
-npm run install:all
+# Set your production database URL
+export DATABASE_URL="mysql://root:password@host:3306/railway"
+
+# Run Prisma migrations & seed initial admin accounts
+npx prisma db push
+npx prisma db seed
 ```
 
-### 2. Configure Database & Environment
-Open `backend/.env` (or copy from `backend/.env.example`) and set your database connection:
-```env
-DATABASE_URL="mysql://root:YOUR_PASSWORD@localhost:3306/lingotech_pms"
-PORT=5000
-```
+*(Alternatively, import `lingotech_pms.sql` directly via phpMyAdmin or MySQL CLI).*
 
-### 3. Initialize Database
+---
+
+### STEP 3: Deploy Backend API (Render.com / Railway.app)
+
+1. Create a new **Web Service** on Render.com or Railway.app linked to your GitHub repo (`Digiworq/translation-pms`).
+2. Set **Root Directory**: `backend`
+3. Set **Build Command**: `npm install && npx prisma generate`
+4. Set **Start Command**: `node src/server.js`
+5. Add Environment Variables:
+   - `DATABASE_URL` = `mysql://root:password@host:3306/railway`
+   - `NODE_ENV` = `production`
+   - `CLIENT_URL` = `https://translation-pms-five.vercel.app`
+   - `JWT_SECRET` = `your_secure_production_jwt_secret_key`
+6. Click **Deploy**!
+7. Copy your live backend API URL (e.g. `https://translation-pms-api.onrender.com`).
+
+---
+
+### STEP 4: Connect Vercel Frontend to Production Backend
+
+1. Go to your **[Vercel Dashboard](https://vercel.com)** -> Select your `translation-pms` project.
+2. Navigate to **Settings** -> **Environment Variables**.
+3. Add a new variable:
+   - **Key**: `VITE_API_URL`
+   - **Value**: `https://translation-pms-api.onrender.com/api`
+   - Select **Production**, **Preview**, and **Development**.
+4. Click **Save** and trigger a **Redeploy** on Vercel.
+
+---
+
+## 🔍 Verification & Health Check
+
+1. Verify backend health endpoint:
+   ```http
+   GET https://translation-pms-api.onrender.com/api/health
+   ```
+   Response:
+   ```json
+   {
+     "success": true,
+     "message": "PMS backend is running"
+   }
+   ```
+
+2. Open your live Vercel application:
+   **`https://translation-pms-five.vercel.app`**
+
+3. Test logging in, managing projects, clients, vendors, and invoices — **the application runs 24/7 independently without requiring your personal computer!**
+
+---
+
+## 💻 Local Development Setup
+
+### 1. Backend Setup
 ```bash
-npm run prisma:migrate
-npm run seed:mysql
+cd backend
+npm install
+npx prisma generate
+npm start
 ```
+Backend runs locally at `http://localhost:5000/api`.
 
-*(For detailed alternative database import options, see [DATABASE_SETUP_GUIDE.md](DATABASE_SETUP_GUIDE.md)).*
-
-### 4. Run Development Server
+### 2. Frontend Setup
 ```bash
+cd frontend
+npm install
 npm run dev
 ```
-Open **`http://localhost:5173`** in your browser!
-
----
-
-## 🗄️ Database Setup Instructions
-
-For clients or developers importing the database into a fresh MySQL installation, please refer to the comprehensive guide in **[DATABASE_SETUP_GUIDE.md](DATABASE_SETUP_GUIDE.md)**:
-
-- **Method 1**: Automated Prisma Migration & Seed (`npm run prisma:migrate && npm run seed:mysql`)
-- **Method 2**: MySQL Command Line Import (`mysql -u root -p lingotech_pms < lingotech_pms.sql`)
-- **Method 3**: MySQL Workbench GUI Import
-
----
-
-## 🚀 Deployment to Vercel
-
-This repository is pre-configured for 1-click deployment on **Vercel**:
-
-1. Push this repository to your GitHub account using `push_to_github.bat`.
-2. Go to **[Vercel.com](https://vercel.com)** and click **"Add New Project"**.
-3. Select this repository (`translation-pms`).
-4. In Project Settings -> **Environment Variables**, set:
-   ```env
-   DATABASE_URL="mysql://user:password@your-cloud-db-host:3306/lingotech_pms"
-   ```
-5. Click **Deploy**!
-
----
-
-## 🔒 Default Super Admin Credentials
-
-- **Role**: Executive Super Admin
-- **Email**: `admin@pms.com`
-- **Permissions**: Full system management (Create/Edit Projects, Clients, Vendors, Delete Controls).
-
----
-
-## 📜 License
-Privately owned software for Enterprise Translation & Localization Management.
+Frontend runs locally at `http://localhost:5173`.

@@ -27,24 +27,26 @@ const { connectMongoDB, getDb, DB_NAME } = require('./config/db');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Initialize MongoDB Connection
+// Initialize MongoDB Connection if used
 connectMongoDB();
+
+// Security HTTP Headers
+app.use(helmet({ contentSecurityPolicy: false }));
 
 // Enable CORS — allow localhost in dev, Vercel domain in production
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
-  process.env.CLIENT_URL,           // set this to your Vercel URL in production
+  process.env.CLIENT_URL,
 ].filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (Postman, curl, server-to-server)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
       return callback(null, true);
     }
-    return callback(null, true); // open for now — tighten after deploy
+    return callback(null, true);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -55,16 +57,20 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Database Health check endpoint
-app.get('/api/test-db', (req, res) => {
-  res.json({ success: true, message: 'Server & DB route online.' });
+// Dual Mount Router (Supports both Cloud Node server & Vercel Serverless Rewrites)
+const mainRouter = express.Router();
+
+// Production Health Check Endpoints (Step 14)
+mainRouter.get('/health', (req, res) => {
+  res.json({
+    success: true,
+    message: 'PMS backend is running'
+  });
 });
-app.get('/test-db', (req, res) => {
+mainRouter.get('/test-db', (req, res) => {
   res.json({ success: true, message: 'Server & DB route online.' });
 });
 
-// Dual Mount Router (Supports both Vercel Serverless Rewrites and Direct Localhost requests)
-const mainRouter = express.Router();
 mainRouter.use('/auth', authRoutes);
 mainRouter.use('/users', userRoutes);
 mainRouter.use('/clients', clientRoutes);
@@ -82,13 +88,13 @@ mainRouter.use('/settings', settingRoutes);
 app.use('/api', mainRouter);
 app.use('/', mainRouter);
 
-// Error Handler Middleware
+// Global Error Handler
 app.use(errorHandler);
 
-if (require.main === module) {
+// Start listening if executed directly
+if (require.main === module || process.env.NODE_ENV === 'production') {
   app.listen(PORT, () => {
     console.log(`🚀 [SERVER ONLINE] PMS Backend listening on port ${PORT}`);
-    console.log(`🔗 Direct API URL: http://localhost:${PORT}/api`);
   });
 }
 
