@@ -1,0 +1,5 @@
+[
+  { "vendorCode": "VND-0001", "name": "Hans Gruber", "companyName": "Bavaria Translations UG", "email": "hans@bavariade.com", "phone": "+49 89 123456", "specialization": "Technical, Automotive, Legal", "ratePerWord": 1.50, "availability": "AVAILABLE", "status": "ACTIVE", "rating": 4.9, "languages": [{ "sourceLang": "English", "targetLang": "German" }] },
+  { "vendorCode": "VND-0002", "name": "Maria Garcia", "companyName": "Iberian Translation Services", "email": "maria@iberian.es", "phone": "+34 91 987654", "specialization": "Medical, Pharma, Clinical Protocols", "ratePerWord": 1.50, "availability": "AVAILABLE", "status": "ACTIVE", "rating": 5.0, "languages": [{ "sourceLang": "English", "targetLang": "Spanish" }] },
+  { "vendorCode": "VND-0003", "name": "Kenji Sato", "companyName": "Tokyo Localization Works", "email": "kenji@tokyolocal.jp", "phone": "+81 3 5555 0123", "specialization": "Software, Mobile UI, Gaming", "ratePerWord": 2.00, "availability": "BUSY", "status": "ACTIVE", "rating": 4.8, "languages": [{ "sourceLang": "English", "targetLang": "Japanese" }] }
+]

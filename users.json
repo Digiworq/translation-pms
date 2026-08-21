@@ -1,0 +1,6 @@
+[
+  { "email": "admin@pms.com", "name": "Executive Super Admin", "role": "SUPER_ADMIN", "status": "ACTIVE", "phone": "+1 (800) 555-0100" },
+  { "email": "pm@pms.com", "name": "Sarah Connor (Lead PM)", "role": "PROJECT_MANAGER", "status": "ACTIVE", "phone": "+1 (800) 555-0101" },
+  { "email": "accounts@pms.com", "name": "Robert Financials", "role": "ACCOUNTS", "status": "ACTIVE", "phone": "+1 (800) 555-0102" },
+  { "email": "translator@pms.com", "name": "Hans Gruber", "role": "VENDOR", "status": "ACTIVE", "phone": "+49 89 123456" }
+]

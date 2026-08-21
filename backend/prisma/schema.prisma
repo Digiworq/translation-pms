@@ -1,0 +1,428 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  PROJECT_MANAGER
+  ACCOUNTS
+  VENDOR
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum VendorAvailability {
+  AVAILABLE
+  BUSY
+  UNAVAILABLE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ProjectStatus {
+  NEW
+  ASSIGNED
+  IN_PROGRESS
+  UNDER_REVIEW
+  COMPLETED
+  DELIVERED
+  ON_HOLD
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+}
+
+enum AssignmentStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+enum VendorInvoiceStatus {
+  PENDING
+  APPROVED
+  PROCESSING
+  PAID
+  REJECTED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique
+  password     String
+  name         String
+  phone        String?
+  role         Role       @default(PROJECT_MANAGER)
+  status       UserStatus @default(ACTIVE)
+  vendorId     String?    @unique
+  vendor       Vendor?    @relation(fields: [vendorId], references: [id], onDelete: SetNull)
+  
+  managedProjects Project[] @relation("ProjectManager")
+  uploadedFiles   ProjectFile[]
+  projectNotes    ProjectNote[]
+  notifications   Notification[]
+  auditLogs       AuditLog[]
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([email])
+  @@index([role])
+}
+
+model Client {
+  id            String      @id @default(uuid())
+  clientCode    String      @unique
+  companyName   String
+  contactPerson String
+  email         String
+  phone         String
+  address       String?     @db.Text
+  gstNumber     String?
+  taxInfo       String?
+  poInfo        String?
+  paymentTerms  String?     @default("30 Days")
+  status        UserStatus  @default(ACTIVE)
+  notes         String?     @db.Text
+
+  projects       Project[]
+  invoices       Invoice[]
+  clientPayments ClientPayment[]
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([clientCode])
+  @@index([email])
+}
+
+model Vendor {
+  id             String             @id @default(uuid())
+  vendorCode     String             @unique
+  name           String
+  companyName    String?
+  address        String?            @db.Text
+  phone          String
+  email          String
+  gstNumber      String?
+  paymentInfo    String?            @db.Text
+  specialization String?
+  projectTypes   String?            // JSON string of arrays or comma separated
+  ratePerWord    Float              @default(0.0)
+  ratePerPage    Float              @default(0.0)
+  hourlyRate     Float              @default(0.0)
+  availability   VendorAvailability @default(AVAILABLE)
+  status         UserStatus         @default(ACTIVE)
+  rating         Float              @default(5.0)
+  notes          String?            @db.Text
+
+  user           User?
+  languages      VendorLanguage[]
+  assignments    ProjectVendor[]
+  vendorInvoices VendorInvoice[]
+  vendorPayments VendorPayment[]
+
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  @@index([vendorCode])
+  @@index([email])
+  @@index([status])
+}
+
+model VendorLanguage {
+  id         String   @id @default(uuid())
+  vendorId   String
+  vendor     Vendor   @relation(fields: [vendorId], references: [id], onDelete: Cascade)
+  sourceLang String
+  targetLang String
+
+  @@index([vendorId])
+}
+
+model Project {
+  id               String        @id @default(uuid())
+  projectCode      String        @unique // PRJ-2026-0001
+  invoiceNumber    String?
+  projectManagerId String
+  projectManager   User          @relation("ProjectManager", fields: [projectManagerId], references: [id])
+  date             DateTime      @default(now())
+  clientId         String
+  client           Client        @relation(fields: [clientId], references: [id])
+  clientAddress    String?       @db.Text
+  clientContact    String?
+  poNumber         String?
+  gstNumber        String?
+  projectName      String
+  fileName         String?
+  projectType      String        // Translation, Proofreading, DTP, Voice Over, etc.
+  sourceLang       String
+  targetLang       String
+  wordCount        Int           @default(0)
+  pageCount        Int           @default(0)
+  ratePerWord      Float         @default(0.0)
+  ratePerPage      Float         @default(0.0)
+  clientAmount     Float         @default(0.0)
+  totalVendorCost  Float         @default(0.0)
+  grossProfit      Float         @default(0.0)
+  profitMargin     Float         @default(0.0)
+  paidAmount       Float         @default(0.0)
+  outstandingAmount Float        @default(0.0)
+  startDate        DateTime      @default(now())
+  deadline         DateTime
+  priority         Priority      @default(MEDIUM)
+  status           ProjectStatus @default(NEW)
+  paymentStatus    PaymentStatus @default(PENDING)
+  notes            String?       @db.Text
+
+  vendors          ProjectVendor[]
+  files            ProjectFile[]
+  invoices         Invoice[]
+  clientPayments   ClientPayment[]
+  vendorInvoices   VendorInvoice[]
+  vendorPayments   VendorPayment[]
+  projectNotes     ProjectNote[]
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([projectCode])
+  @@index([clientId])
+  @@index([projectManagerId])
+  @@index([status])
+  @@index([deadline])
+}
+
+model ProjectVendor {
+  id            String           @id @default(uuid())
+  projectId     String
+  project       Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  vendorId      String
+  vendor        Vendor           @relation(fields: [vendorId], references: [id])
+  taskType      String           // Translation, Proofreading, DTP, etc.
+  sourceLang    String?
+  targetLang    String?
+  assignedWords Int              @default(0)
+  assignedPages Int              @default(0)
+  vendorRate    Float            @default(0.0)
+  vendorAmount  Float            @default(0.0)
+  startDate     DateTime?
+  deadline      DateTime?
+  status        AssignmentStatus @default(PENDING)
+  notes         String?          @db.Text
+
+  vendorInvoices VendorInvoice[]
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([projectId])
+  @@index([vendorId])
+}
+
+model ProjectFile {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fileName     String
+  fileType     String   // DOC, PDF, XLSX, ZIP, etc.
+  fileSize     Int
+  mimeType     String?
+  storagePath  String
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+  version      String   @default("v1") // v1, v2, Final, Approved
+  description  String?
+  status       String   @default("ACTIVE") // ACTIVE, ARCHIVED
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model Invoice {
+  id            String        @id @default(uuid())
+  invoiceNumber String        @unique // INV-2026-0001
+  clientId      String
+  client        Client        @relation(fields: [clientId], references: [id])
+  projectId     String?
+  project       Project?      @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  invoiceDate   DateTime      @default(now())
+  dueDate       DateTime
+  poNumber      String?
+  gstNumber     String?
+  subtotal      Float         @default(0.0)
+  taxAmount     Float         @default(0.0)
+  discount      Float         @default(0.0)
+  grandTotal    Float         @default(0.0)
+  paidAmount    Float         @default(0.0)
+  balanceAmount Float         @default(0.0)
+  paymentStatus PaymentStatus @default(PENDING)
+  notes         String?       @db.Text
+
+  items          InvoiceItem[]
+  clientPayments ClientPayment[]
+
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  @@index([invoiceNumber])
+  @@index([clientId])
+  @@index([paymentStatus])
+}
+
+model InvoiceItem {
+  id        String  @id @default(uuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  service   String
+  language  String?
+  quantity  Float   @default(1.0)
+  unit      String  @default("word") // word, page, hour, flat
+  rate      Float   @default(0.0)
+  amount    Float   @default(0.0)
+
+  @@index([invoiceId])
+}
+
+model ClientPayment {
+  id             String   @id @default(uuid())
+  invoiceId      String
+  invoice        Invoice  @relation(fields: [invoiceId], references: [id])
+  clientId       String
+  client         Client   @relation(fields: [clientId], references: [id])
+  projectId      String?
+  project        Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  paymentDate    DateTime @default(now())
+  amount         Float    @default(0.0)
+  paymentMethod  String   // BANK_TRANSFER, CREDIT_CARD, PAYPAL, CHECK, OTHER
+  transactionRef String?
+  status         String   @default("COMPLETED") // PENDING, COMPLETED, FAILED
+  notes          String?  @db.Text
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([invoiceId])
+  @@index([clientId])
+}
+
+model VendorInvoice {
+  id                  String              @id @default(uuid())
+  vendorId            String
+  vendor              Vendor              @relation(fields: [vendorId], references: [id])
+  projectId           String?
+  project             Project?            @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  vendorAssignmentId  String?
+  vendorAssignment    ProjectVendor?      @relation(fields: [vendorAssignmentId], references: [id], onDelete: SetNull)
+  vendorInvoiceNumber String
+  amount              Float               @default(0.0)
+  invoiceDate         DateTime            @default(now())
+  dueDate             DateTime?
+  status              VendorInvoiceStatus @default(PENDING)
+  notes               String?             @db.Text
+
+  payments            VendorPayment[]
+
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([vendorId])
+  @@index([projectId])
+}
+
+model VendorPayment {
+  id              String         @id @default(uuid())
+  vendorInvoiceId String?
+  vendorInvoice   VendorInvoice? @relation(fields: [vendorInvoiceId], references: [id], onDelete: SetNull)
+  vendorId        String
+  vendor          Vendor         @relation(fields: [vendorId], references: [id])
+  projectId       String?
+  project         Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  amount          Float          @default(0.0)
+  paymentDate     DateTime       @default(now())
+  paymentMethod   String         // BANK_TRANSFER, PAYPAL, CHECK, OTHER
+  transactionRef  String?
+  status          String         @default("PAID") // PENDING, PROCESSING, PAID, REJECTED
+  notes           String?        @db.Text
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([vendorId])
+  @@index([projectId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   // DEADLINE, OVERDUE, ASSIGNMENT, FILE_UPLOAD, COMPLETED, INVOICE, PAYMENT
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userName    String
+  userRole    String
+  action      String   // CREATE, UPDATE, DELETE, LOGIN, DOWNLOAD, STATUS_CHANGE
+  entity      String   // PROJECT, VENDOR, CLIENT, INVOICE, FILE, USER
+  entityId    String?
+  ipAddress   String?
+  beforeValue String?  @db.Text // JSON string
+  afterValue  String?  @db.Text // JSON string
+  timestamp   DateTime @default(now())
+
+  @@index([entity])
+  @@index([entityId])
+  @@index([timestamp])
+}
+
+model ProjectNote {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  note      String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+}
+
+model SystemSetting {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+}

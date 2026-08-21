@@ -1,0 +1,4 @@
+[
+  { "invoiceNumber": "INV-2026-0001", "clientName": "Global Enterprise Tech Corp", "projectCode": "PRJ-2026-0001", "invoiceDate": "2026-08-15T00:00:00.000Z", "dueDate": "2026-09-15T00:00:00.000Z", "subtotal": 30000.00, "taxAmount": 5400.00, "discount": 0, "grandTotal": 35400.00, "paidAmount": 15000.00, "balanceAmount": 20400.00, "paymentStatus": "PARTIALLY_PAID" },
+  { "invoiceNumber": "INV-2026-0002", "clientName": "BioHealth Solutions Inc.", "projectCode": "PRJ-2026-0002", "invoiceDate": "2026-08-01T00:00:00.000Z", "dueDate": "2026-08-16T00:00:00.000Z", "subtotal": 60000.00, "taxAmount": 10800.00, "discount": 800.00, "grandTotal": 70000.00, "paidAmount": 70000.00, "balanceAmount": 0.00, "paymentStatus": "PAID" }
+]
