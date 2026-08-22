@@ -114,13 +114,16 @@ const createInvoice = async (req, res, next) => {
       return sum + (qty * rate);
     }, 0) || parseFloat(body.subtotal) || 0;
 
-    const taxAmount = parseFloat(body.taxAmount) || 0;
-    const discount = parseFloat(body.discount) || 0;
-    const grandTotal = subtotal + taxAmount - discount;
-
-    const dueDate = body.dueDate
-      ? new Date(body.dueDate)
-      : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    const initialPaid = parseFloat(body.paidAmount || body.initialPaid) || 0;
+    const paidAmount = Math.min(grandTotal, initialPaid);
+    const balanceAmount = Math.max(0, grandTotal - paidAmount);
+    
+    let paymentStatus = body.paymentStatus || 'PENDING';
+    if (paidAmount >= grandTotal && grandTotal > 0) {
+      paymentStatus = 'PAID';
+    } else if (paidAmount > 0) {
+      paymentStatus = 'PARTIAL';
+    }
 
     const invoice = await prisma.invoice.create({
       data: {
@@ -135,9 +138,10 @@ const createInvoice = async (req, res, next) => {
         taxAmount,
         discount,
         grandTotal,
-        paidAmount: 0,
-        balanceAmount: grandTotal,
-        paymentStatus: 'PENDING',
+        paidAmount,
+        balanceAmount,
+        paymentStatus,
+        paymentMethod: body.paymentMethod || null,
         notes: body.notes || null,
         items: items.length > 0
           ? {

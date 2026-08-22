@@ -7,6 +7,7 @@ import {
   Users,
   Receipt,
   CreditCard,
+  FileText,
   BarChart3,
   ShieldCheck,
   Settings,
@@ -26,6 +27,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Vendors', to: '/vendors', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'ACCOUNTS'] },
     { name: 'Invoices', to: '/invoices', icon: Receipt, roles: ['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'ACCOUNTS'] },
     { name: 'Payments', to: '/payments', icon: CreditCard, roles: ['SUPER_ADMIN', 'ADMIN', 'ACCOUNTS', 'PROJECT_MANAGER', 'VENDOR'] },
+    { name: 'Documents', to: '/documents', icon: FileText, roles: ['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'ACCOUNTS', 'VENDOR'] },
     { name: 'Reports', to: '/reports', icon: BarChart3, roles: ['SUPER_ADMIN', 'ADMIN', 'PROJECT_MANAGER', 'ACCOUNTS'] },
     { name: 'Audit Logs', to: '/audit-logs', icon: ShieldCheck, roles: ['SUPER_ADMIN', 'ADMIN'] },
     { name: 'Users', to: '/users', icon: Users, roles: ['SUPER_ADMIN', 'ADMIN'] },
@@ -98,15 +100,15 @@ export const Sidebar = ({ isOpen, onClose }) => {
               <div className="w-9 h-9 rounded-full bg-brand-700 text-white flex items-center justify-center font-bold text-sm">
                 {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
-              <div className="truncate">
-                <p className="text-xs font-semibold text-white truncate">{user?.name}</p>
-                <p className="text-[10px] text-brand-400 font-mono tracking-wide uppercase">{user?.role?.replace('_', ' ')}</p>
+              <div className="overflow-hidden">
+                <p className="text-sm font-semibold text-white truncate">{user?.name || 'Admin User'}</p>
+                <p className="text-xs text-slate-400 truncate">{user?.email || 'admin@pms.com'}</p>
               </div>
             </div>
             <button
               onClick={logout}
+              className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
               title="Logout"
-              className="p-2 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition-colors"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -116,3 +118,5 @@ export const Sidebar = ({ isOpen, onClose }) => {
     </>
   );
 };
+
+export default Sidebar;

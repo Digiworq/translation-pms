@@ -6,11 +6,11 @@ import { Badge } from '../../components/UI/Badge';
 import { Button } from '../../components/UI/Button';
 import { Modal } from '../../components/UI/Modal';
 import { EmptyState } from '../../components/UI/EmptyState';
-import { Plus, Search, Mail, Phone, Languages, Star, Trash2, RefreshCw } from 'lucide-react';
+import { Plus, Search, Mail, Phone, Languages, Star, Trash2, RefreshCw, FileSpreadsheet, LayoutGrid, Table } from 'lucide-react';
 
 const EMPTY_FORM = {
-  name: '', email: '', phone: '', specialization: '',
-  ratePerWord: 1.50, sourceLang: 'English', targetLang: 'German'
+  name: '', email: '', phone: '', specialization: 'Technical, Legal, Medical',
+  ratePerWord: 1.50, rateUnit: 'Per Word', sourceLang: 'English', targetLang: 'German', notes: ''
 };
 
 export const VendorsList = () => {
@@ -22,6 +22,7 @@ export const VendorsList = () => {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
   const [search, setSearch]       = useState('');
+  const [viewMode, setViewMode]   = useState('table'); // 'table' or 'grid'
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting]   = useState(false);
   const [formError, setFormError]     = useState('');
@@ -45,7 +46,34 @@ export const VendorsList = () => {
         setVendors(JSON.parse(saved));
       } else {
         setVendors([
-          { id: 'vnd-01', vendorCode: 'VND-0001', name: 'Hans Gruber', email: 'hans@bavaria-trans.com', phone: '+49 89 123456', country: 'Germany', ratePerWord: 1.5, status: 'AVAILABLE' }
+          {
+            id: 'vnd-01',
+            vendorCode: 'VND-0001',
+            name: 'Hans Gruber',
+            email: 'hans@bavaria-trans.com',
+            phone: '+49 89 123456',
+            specialization: 'Technical, Legal, Automotive',
+            ratePerWord: 1.50,
+            rateUnit: 'Per Word',
+            availability: 'AVAILABLE',
+            assignedProjects: 5,
+            notes: 'Top tier German translator with 10+ yrs experience.',
+            languages: [{ sourceLang: 'English', targetLang: 'German' }]
+          },
+          {
+            id: 'vnd-02',
+            vendorCode: 'VND-0002',
+            name: 'Carlos Gomez',
+            email: 'c.gomez@spanishtrans.es',
+            phone: '+34 91 987654',
+            specialization: 'Medical, Certified Protocols',
+            ratePerWord: 2.00,
+            rateUnit: 'Per Word',
+            availability: 'AVAILABLE',
+            assignedProjects: 3,
+            notes: 'Sworn Spanish medical translator.',
+            languages: [{ sourceLang: 'English', targetLang: 'Spanish' }]
+          }
         ]);
       }
     } catch (e) {}
@@ -82,6 +110,36 @@ export const VendorsList = () => {
     } catch (e) { alert(e.response?.data?.message || 'Failed to delete vendor.'); }
   };
 
+  const handleExportCSV = () => {
+    const headers = [
+      'Translator ID', 'Translator Name', 'Languages', 'Specialization',
+      'Phone', 'Email', 'Rate', 'Rate Unit', 'Active', 'Assigned Projects', 'Notes'
+    ];
+
+    const rows = filtered.map(v => [
+      v.vendorCode,
+      v.name,
+      `${v.languages?.[0]?.sourceLang || 'English'} -> ${v.languages?.[0]?.targetLang || 'German'}`,
+      `"${(v.specialization || '').replace(/"/g, '""')}"`,
+      v.phone,
+      v.email,
+      v.ratePerWord || 1.5,
+      v.rateUnit || 'Per Word',
+      v.availability || 'AVAILABLE',
+      v.assignedProjects || v.assignments?.length || 0,
+      `"${(v.notes || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `Translators_Directory_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const filtered = vendors.filter(v => {
     const t = search.toLowerCase();
     return !t || v.name?.toLowerCase().includes(t) || v.email?.toLowerCase().includes(t) ||
@@ -92,14 +150,30 @@ export const VendorsList = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Vendors & Translators</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Linguist matrix, domain specializations, and word rates</p>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Translators & Vendors Master</h1>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Linguist roster, domain specializations, language pairs & rates</p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={fetchVendors} className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-500" title="Refresh">
-            <RefreshCw className="w-4 h-4" />
-          </button>
-          {canCreate && <Button onClick={() => { setFormError(''); setIsModalOpen(true); }} icon={Plus}>Add Vendor</Button>}
+          <Button onClick={handleExportCSV} variant="secondary" icon={FileSpreadsheet}>
+            Export Excel (CSV)
+          </Button>
+          <div className="bg-slate-100 p-1 rounded-lg flex items-center gap-1 border border-slate-200">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-md ${viewMode === 'table' ? 'bg-white shadow text-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
+              title="Table View"
+            >
+              <Table className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-md ${viewMode === 'grid' ? 'bg-white shadow text-brand-600' : 'text-slate-500 hover:text-slate-800'}`}
+              title="Grid Cards View"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+          </div>
+          {canCreate && <Button onClick={() => { setFormError(''); setIsModalOpen(true); }} icon={Plus}>Add Translator</Button>}
         </div>
       </div>
 
@@ -109,17 +183,84 @@ export const VendorsList = () => {
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search name, code, language, domain..."
-            className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-brand-500" />
+            placeholder="Search translator ID, name, language, domain..."
+            className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-brand-500 font-medium" />
         </div>
       </Card>
 
       {loading ? (
-        <div className="py-12 text-center text-slate-500">Loading vendors...</div>
+        <div className="py-12 text-center text-slate-500 font-medium text-sm">Loading translators directory...</div>
       ) : filtered.length === 0 ? (
-        <EmptyState title="No vendors found" description="Onboard your first translator vendor."
-          actionLabel={canCreate ? 'Add Vendor' : null} onAction={() => setIsModalOpen(true)} />
+        <EmptyState title="No translators found" description="Onboard your first translator vendor."
+          actionLabel={canCreate ? 'Add Translator' : null} onAction={() => setIsModalOpen(true)} />
+      ) : viewMode === 'table' ? (
+        /* Table View — Exact 11 Translator Columns Specified by Client */
+        <Card className="overflow-hidden p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-700 whitespace-nowrap">
+              <thead className="bg-slate-900 text-white uppercase text-[11px] font-bold tracking-wider border-b border-slate-800">
+                <tr>
+                  <th className="py-3.5 px-4">Translator ID</th>
+                  <th className="py-3.5 px-4">Translator Name</th>
+                  <th className="py-3.5 px-4">Languages</th>
+                  <th className="py-3.5 px-4">Specialization</th>
+                  <th className="py-3.5 px-4">Phone</th>
+                  <th className="py-3.5 px-4">Email</th>
+                  <th className="py-3.5 px-4 text-right">Rate</th>
+                  <th className="py-3.5 px-4 text-center">Rate Unit</th>
+                  <th className="py-3.5 px-4 text-center">Active</th>
+                  <th className="py-3.5 px-4 text-center">Assigned Projects</th>
+                  <th className="py-3.5 px-4">Notes</th>
+                  <th className="py-3.5 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-medium">
+                {filtered.map(v => (
+                  <tr key={v.id} className="hover:bg-slate-50 transition-colors">
+                    {/* 1. Translator ID */}
+                    <td className="py-3.5 px-4 font-bold text-brand-600">{v.vendorCode}</td>
+                    {/* 2. Translator Name */}
+                    <td className="py-3.5 px-4 font-bold text-slate-900">{v.name}</td>
+                    {/* 3. Languages */}
+                    <td className="py-3.5 px-4 font-mono text-slate-700">
+                      {v.languages?.[0]?.sourceLang || 'English'} → {v.languages?.[0]?.targetLang || 'German'}
+                    </td>
+                    {/* 4. Specialization */}
+                    <td className="py-3.5 px-4 text-slate-800">{v.specialization || 'Technical, Legal'}</td>
+                    {/* 5. Phone */}
+                    <td className="py-3.5 px-4 font-mono text-slate-700">{v.phone}</td>
+                    {/* 6. Email */}
+                    <td className="py-3.5 px-4 text-slate-600">{v.email}</td>
+                    {/* 7. Rate */}
+                    <td className="py-3.5 px-4 text-right font-mono font-bold text-slate-900">₹{v.ratePerWord || 1.50}</td>
+                    {/* 8. Rate Unit */}
+                    <td className="py-3.5 px-4 text-center">
+                      <span className="bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5 rounded font-semibold">
+                        {v.rateUnit || 'Per Word'}
+                      </span>
+                    </td>
+                    {/* 9. Active */}
+                    <td className="py-3.5 px-4 text-center"><Badge status={v.availability || 'AVAILABLE'} /></td>
+                    {/* 10. Assigned Projects */}
+                    <td className="py-3.5 px-4 text-center font-bold text-slate-800">{v.assignedProjects || v.assignments?.length || 0}</td>
+                    {/* 11. Notes */}
+                    <td className="py-3.5 px-4 max-w-xs truncate text-slate-500" title={v.notes}>{v.notes || '—'}</td>
+                    {/* Action */}
+                    <td className="py-3.5 px-4 text-right">
+                      {isSuperAdmin && (
+                        <button onClick={() => handleDelete(v.id, v.name)} className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50" title="Delete">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       ) : (
+        /* Grid View */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map(v => (
             <Card key={v.id} className="hover:border-brand-300 transition-colors">
@@ -158,7 +299,8 @@ export const VendorsList = () => {
         </div>
       )}
 
-      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setFormError(''); }} title="Add New Vendor">
+      {/* Modal */}
+      <Modal isOpen={isModalOpen} onClose={() => { setIsModalOpen(false); setFormError(''); }} title="Add New Translator Vendor">
         <form onSubmit={handleCreate} className="space-y-4">
           {formError && <div className="bg-red-50 border border-red-200 text-red-700 text-xs px-3 py-2 rounded-lg">{formError}</div>}
           <div className="grid grid-cols-2 gap-4">
@@ -198,16 +340,23 @@ export const VendorsList = () => {
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">Specialization</label>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Domain Specialization</label>
             <input type="text" value={formData.specialization} onChange={e => setFormData({...formData, specialization: e.target.value})}
-              placeholder="e.g. Legal, Medical, Technical" className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-brand-500" />
+              placeholder="e.g. Legal, Technical, Medical, Financial" className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-brand-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">Notes / Instructions</label>
+            <textarea rows={2} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}
+              placeholder="Linguist background & qualifications notes..." className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-brand-500" />
           </div>
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <Button type="button" variant="secondary" onClick={() => { setIsModalOpen(false); setFormError(''); }}>Cancel</Button>
-            <Button type="submit" loading={submitting}>Add Vendor</Button>
+            <Button type="submit" loading={submitting}>Add Translator Profile</Button>
           </div>
         </form>
       </Modal>
     </div>
   );
 };
+
+export default VendorsList;

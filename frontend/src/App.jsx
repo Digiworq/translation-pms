@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AppLayout } from './components/Layout/AppLayout';
 import { Login } from './pages/Login';
@@ -11,6 +11,7 @@ import { ClientDetails } from './pages/Clients/ClientDetails';
 import { VendorsList } from './pages/Vendors/VendorsList';
 import { InvoicesList } from './pages/Invoices/InvoicesList';
 import { PaymentsList } from './pages/Payments/PaymentsList';
+import { DocumentsList } from './pages/Documents/DocumentsList';
 import { ReportsPage } from './pages/Reports/ReportsPage';
 import { AuditLogsList } from './pages/AuditLogs/AuditLogsList';
 import { UsersList } from './pages/UserManagement/UsersList';
@@ -54,11 +55,13 @@ export const App = () => {
             <Route path="vendors" element={<VendorsList />} />
             <Route path="invoices" element={<InvoicesList />} />
             <Route path="payments" element={<PaymentsList />} />
+            <Route path="documents" element={<DocumentsList />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="audit-logs" element={<AuditLogsList />} />
             <Route path="users" element={<UsersList />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
+          {/* Catch-all route to redirect any unknown URL to /login */}
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
