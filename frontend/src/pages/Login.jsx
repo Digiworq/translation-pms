@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/UI/Button';
 import { Card } from '../components/UI/Card';
+import { VismaLogo } from '../components/UI/VismaLogo';
 import { Globe, Lock, Mail, AlertCircle, ArrowRight } from 'lucide-react';
 
 export const Login = () => {
@@ -42,12 +43,11 @@ export const Login = () => {
 
       <Card className="w-full max-w-md p-8 bg-white/95 backdrop-blur shadow-2xl rounded-2xl border border-slate-100 z-10">
         {/* Branding Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-brand-600 text-white mb-3 shadow-lg shadow-brand-500/30">
-            <Globe className="w-6 h-6 animate-pulse" />
+        <div className="text-center mb-8 space-y-2">
+          <div className="flex justify-center">
+            <VismaLogo size="lg" />
           </div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">LingoTech <span className="text-brand-600 font-black">PMS</span></h1>
-          <p className="text-xs text-slate-500 mt-1 font-medium">Enterprise Translation & Localization Operations Platform</p>
+          <p className="text-xs text-slate-500 font-medium pt-1">Visma Translation & Localization Enterprise Platform</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-4">

@@ -12,7 +12,7 @@ const EMPTY_FORM = {
   projectCode: 'PRJ-2026-0001',
   fileName: '',
   fileType: 'PDF',
-  fileUrl: 'https://cdn.lingotech.com/docs/sample_doc.pdf',
+  fileUrl: 'https://cdn.vismatranslation.com/docs/sample_doc.pdf',
   version: 'v1.0',
   status: 'DRAFT',
   notes: ''

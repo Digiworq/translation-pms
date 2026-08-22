@@ -6,6 +6,7 @@ import { Badge } from '../../components/UI/Badge';
 import { Button } from '../../components/UI/Button';
 import { Modal } from '../../components/UI/Modal';
 import { EmptyState } from '../../components/UI/EmptyState';
+import { VismaLogo } from '../../components/UI/VismaLogo';
 import { Plus, Search, Eye, Trash2, RefreshCw, FileSpreadsheet, Printer, Globe2, CheckCircle2 } from 'lucide-react';
 
 const EMPTY_FORM = {
@@ -494,10 +495,8 @@ export const InvoicesList = () => {
             {/* Header / Branding */}
             <div className="flex justify-between items-start border-b border-slate-200 pb-5">
               <div>
-                <div className="flex items-center gap-2 text-brand-600 font-extrabold text-xl">
-                  <Globe2 className="w-6 h-6" /> LingoTech PMS
-                </div>
-                <p className="text-xs text-slate-500 font-medium mt-1">LingoTech Translation & Localization Services Pvt Ltd</p>
+                <VismaLogo size="md" />
+                <p className="text-xs text-slate-500 font-medium mt-1">Visma Translation & Localization Services Pvt Ltd</p>
                 <p className="text-[11px] text-slate-500">GSTIN: 27AABCL9988H1Z5 | Corporate HQ: Mumbai, MH, India</p>
               </div>
               <div className="text-right">

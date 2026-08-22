@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { VismaLogo } from '../UI/VismaLogo';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -56,13 +57,8 @@ export const Sidebar = ({ isOpen, onClose }) => {
       >
         <div>
           {/* Header Branding */}
-          <div className="h-16 flex items-center justify-between px-6 border-b border-slate-800">
-            <div className="flex items-center gap-2.5 font-bold text-white text-lg tracking-tight">
-              <div className="p-1.5 rounded-lg bg-brand-600 text-white">
-                <Globe2 className="w-5 h-5" />
-              </div>
-              <span>LingoTech <span className="text-brand-500 font-normal text-xs uppercase px-1.5 py-0.5 rounded bg-brand-900/60 border border-brand-700">PMS</span></span>
-            </div>
+          <div className="h-16 flex items-center justify-between px-5 border-b border-slate-800">
+            <VismaLogo isDarkBg={true} size="md" />
             <button onClick={onClose} className="lg:hidden text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
             </button>
