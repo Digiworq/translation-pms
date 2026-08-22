@@ -9,8 +9,8 @@ import { EmptyState } from '../../components/UI/EmptyState';
 import { Plus, Search, Eye, Trash2, RefreshCw, FileSpreadsheet, Printer, Globe2, CheckCircle2 } from 'lucide-react';
 
 const EMPTY_FORM = {
-  clientId: '', projectId: '', taxPercent: '18',
-  subtotal: '', initialPaid: '0', dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+  clientId: '', projectId: '', taxPercent: '0',
+  subtotal: '', initialPaid: '', dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   poNumber: '', paymentMethod: 'Bank Transfer', notes: ''
 };
 
@@ -98,7 +98,7 @@ export const InvoicesList = () => {
   const handleCreate = async (e) => {
     e.preventDefault(); setFormError('');
     if (!formData.clientId) { setFormError('Please select a client.'); return; }
-    if (!formData.subtotal) { setFormError('Subtotal is required.'); return; }
+    if (!formData.subtotal) { setFormError('Subtotal amount is required.'); return; }
     setSubmitting(true);
     try {
       const subtotal   = parseFloat(formData.subtotal) || 0;
@@ -242,6 +242,14 @@ export const InvoicesList = () => {
       (inv.clientName || inv.client?.companyName)?.toLowerCase().includes(t) ||
       (inv.projectCode || inv.project?.projectCode)?.toLowerCase().includes(t);
   });
+
+  // Calculate Live Form Totals
+  const liveSubtotal = parseFloat(formData.subtotal) || 0;
+  const liveTaxPercent = parseFloat(formData.taxPercent) || 0;
+  const liveTaxAmount = liveSubtotal * (liveTaxPercent / 100);
+  const liveGrandTotal = liveSubtotal + liveTaxAmount;
+  const liveInitialPaid = parseFloat(formData.initialPaid) || 0;
+  const liveBalance = Math.max(0, liveGrandTotal - liveInitialPaid);
 
   return (
     <div className="space-y-6">
@@ -396,14 +404,14 @@ export const InvoicesList = () => {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">Subtotal Amount (₹) *</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">Invoice Base Amount (₹) *</label>
               <input type="number" required step="0.01" value={formData.subtotal} onChange={e => setFormData({...formData, subtotal: e.target.value})}
-                placeholder="50000" className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold" />
+                placeholder="5000" className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">GST Tax %</label>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">GST Tax % (optional)</label>
               <input type="number" value={formData.taxPercent} onChange={e => setFormData({...formData, taxPercent: e.target.value})}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold" />
+                placeholder="0" className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold" />
             </div>
           </div>
 
@@ -411,8 +419,8 @@ export const InvoicesList = () => {
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Amount Paid / Advance Received (₹)</label>
               <input type="number" step="0.01" value={formData.initialPaid} onChange={e => setFormData({...formData, initialPaid: e.target.value})}
-                placeholder="0.00" className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold text-emerald-600" />
-              <span className="text-[10px] text-slate-400 mt-0.5 block">Enter advance paid or leave 0 for full balance due</span>
+                placeholder="0" className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-mono font-bold text-emerald-600" />
+              <span className="text-[10px] text-slate-400 mt-0.5 block">Enter advance amount or leave blank for 0</span>
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">Due Date *</label>
@@ -440,6 +448,32 @@ export const InvoicesList = () => {
             </div>
           </div>
 
+          {/* Live Calculation Preview */}
+          <div className="bg-slate-900 text-white p-3.5 rounded-xl text-xs space-y-1.5 font-mono shadow-inner">
+            <div className="flex justify-between text-slate-400">
+              <span>Invoice Base Amount:</span>
+              <span className="font-bold text-slate-200">₹{liveSubtotal.toLocaleString('en-IN')}</span>
+            </div>
+            {liveTaxPercent > 0 && (
+              <div className="flex justify-between text-slate-400">
+                <span>GST Tax ({liveTaxPercent}%):</span>
+                <span className="font-bold text-slate-300">+ ₹{liveTaxAmount.toLocaleString('en-IN')}</span>
+              </div>
+            )}
+            <div className="flex justify-between font-bold text-sm text-white pt-1.5 border-t border-slate-800">
+              <span>Grand Total Invoice Amount:</span>
+              <span className="text-brand-400">₹{liveGrandTotal.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex justify-between text-emerald-400">
+              <span>Amount Paid:</span>
+              <span className="font-bold">₹{liveInitialPaid.toLocaleString('en-IN')}</span>
+            </div>
+            <div className="flex justify-between font-bold text-rose-400">
+              <span>Balance Due:</span>
+              <span>₹{liveBalance.toLocaleString('en-IN')}</span>
+            </div>
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">Notes / Payment Terms</label>
             <textarea rows={2} value={formData.notes} onChange={e => setFormData({...formData, notes: e.target.value})}
@@ -448,7 +482,7 @@ export const InvoicesList = () => {
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
             <Button type="button" variant="secondary" onClick={() => { setIsModalOpen(false); setFormError(''); }}>Cancel</Button>
-            <Button type="submit" loading={submitting}>Generate Invoice</Button>
+            <Button type="submit" loading={submitting}>Generate Invoice (₹{liveGrandTotal.toLocaleString('en-IN')})</Button>
           </div>
         </form>
       </Modal>

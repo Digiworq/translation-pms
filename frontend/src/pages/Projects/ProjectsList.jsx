@@ -23,40 +23,44 @@ const EMPTY_FORM = {
   rateUnit: 'Per Word',
   translatorName: '',
   reviewerName: '',
-  deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   priority: 'MEDIUM',
-  poNumber: '',
+  deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
   notes: ''
 };
 
 export const ProjectsList = () => {
   const { user } = useAuth();
-  const [searchParams] = useSearchParams();
-
   const isSuperAdmin = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
 
+  const [searchParams] = useSearchParams();
   const [projects, setProjects]   = useState([]);
   const [loading, setLoading]     = useState(true);
-  const [error, setError]         = useState('');
-
-  // Filters
-  const [search, setSearch]               = useState(searchParams.get('search') || '');
-  const [statusFilter, setStatusFilter]   = useState('');
+  const [search, setSearch]       = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [typeFilter, setTypeFilter]     = useState('');
   const [priorityFilter, setPriorityFilter] = useState('');
-  const [projectTypeFilter, setProjectTypeFilter] = useState('');
+  const [isModalOpen, setIsModalOpen]   = useState(false);
+  const [submitting, setSubmitting]     = useState(false);
+  const [formError, setFormError]       = useState('');
+  const [formData, setFormData]         = useState(EMPTY_FORM);
 
-  // Modal
-  const [isModalOpen, setIsModalOpen] = useState(searchParams.get('create') === 'true');
-  const [submitting, setSubmitting]   = useState(false);
-  const [formError, setFormError]     = useState('');
-  const [formData, setFormData]       = useState(EMPTY_FORM);
+  useEffect(() => {
+    if (searchParams.get('create') === 'true' && isSuperAdmin) {
+      setIsModalOpen(true);
+    }
+  }, [searchParams, isSuperAdmin]);
 
-  // ── Fetch projects from MySQL via API with silent backend-off fallback ─────
   const fetchProjects = useCallback(async () => {
     setLoading(true);
-    setError('');
     try {
-      const res = await api.get('/projects');
+      const res = await api.get('/projects', {
+        params: {
+          search: search || undefined,
+          status: statusFilter || undefined,
+          priority: priorityFilter || undefined,
+          limit: 100
+        }
+      });
       if (res.data?.success && Array.isArray(res.data.projects)) {
         setProjects(res.data.projects);
         localStorage.setItem('pms_projects_list', JSON.stringify(res.data.projects));
@@ -65,7 +69,6 @@ export const ProjectsList = () => {
       }
     } catch (e) {}
 
-    // Fallback to local storage or defaults when backend is OFF
     try {
       const saved = localStorage.getItem('pms_projects_list');
       if (saved) {
@@ -81,19 +84,19 @@ export const ProjectsList = () => {
             sourceLang: 'English',
             targetLang: 'German',
             wordCount: 10000,
-            pageCount: 25,
+            pageCount: 40,
             ratePerWord: 3.00,
             rateUnit: 'Per Word',
             clientAmount: 30000,
             totalVendorCost: 9000,
-            outstandingAmount: 30000,
+            outstandingAmount: 9000,
             paymentStatus: 'PENDING',
             status: 'NEW',
-            priority: 'MEDIUM',
+            priority: 'HIGH',
             translatorName: 'Hans Gruber',
             reviewerName: 'Anna Schmidt',
-            date: '2026-08-21',
-            deadline: '2026-08-28',
+            date: '2026-08-20',
+            deadline: '2026-08-27',
             deliveredDate: '—',
             notes: 'High priority German localization.'
           },
@@ -126,7 +129,7 @@ export const ProjectsList = () => {
       }
     } catch (e) {}
     setLoading(false);
-  }, []);
+  }, [search, statusFilter, priorityFilter]);
 
   useEffect(() => {
     fetchProjects();
@@ -138,35 +141,39 @@ export const ProjectsList = () => {
     setSubmitting(true);
     setFormError('');
 
+    let createdProject = null;
     try {
       const res = await api.post('/projects', formData);
-      if (res.data?.success) {
-        setIsModalOpen(false);
-        setFormData(EMPTY_FORM);
-        fetchProjects();
-        return;
+      if (res.data?.success && res.data.project) {
+        createdProject = res.data.project;
       }
     } catch (err) {}
 
-    // Local fallback creation
+    const calculatedClientAmount = formData.rateUnit === 'Per Page'
+      ? Number(formData.pageCount || 1) * Number(formData.ratePerWord || 0)
+      : formData.rateUnit === 'Per Hour'
+      ? Number(formData.pageCount || formData.wordCount || 1) * Number(formData.ratePerWord || 0)
+      : Number(formData.wordCount || 1) * Number(formData.ratePerWord || 0);
+
     const newProj = {
-      id: `prj-${Date.now()}`,
-      projectCode: `PRJ-2026-${String(projects.length + 1).padStart(4, '0')}`,
+      id: createdProject?.id || `prj-${Date.now()}`,
+      projectCode: createdProject?.projectCode || `PRJ-2026-${String(projects.length + 1).padStart(4, '0')}`,
       projectName: formData.projectName,
       clientName: formData.clientName || 'Direct Client',
       projectType: formData.projectType,
       sourceLang: formData.sourceLang,
       targetLang: formData.targetLang,
-      wordCount: Number(formData.wordCount),
-      pageCount: Number(formData.pageCount),
-      ratePerWord: Number(formData.ratePerWord),
+      wordCount: Number(formData.wordCount || 0),
+      pageCount: Number(formData.pageCount || 0),
+      ratePerWord: Number(formData.ratePerWord || 0),
+      ratePerPage: Number(formData.ratePerPage || 0),
       rateUnit: formData.rateUnit || 'Per Word',
-      clientAmount: Number(formData.wordCount) * Number(formData.ratePerWord),
-      totalVendorCost: Number(formData.wordCount) * 1.5,
-      outstandingAmount: Number(formData.wordCount) * Number(formData.ratePerWord),
+      clientAmount: calculatedClientAmount,
+      totalVendorCost: 0,
+      outstandingAmount: calculatedClientAmount,
       paymentStatus: 'PENDING',
       status: 'NEW',
-      priority: formData.priority,
+      priority: formData.priority || 'MEDIUM',
       translatorName: formData.translatorName || 'Unassigned',
       reviewerName: formData.reviewerName || 'Unassigned',
       date: new Date().toISOString().split('T')[0],
@@ -175,7 +182,7 @@ export const ProjectsList = () => {
       notes: formData.notes || ''
     };
 
-    const updated = [newProj, ...projects];
+    const updated = [newProj, ...projects.filter(p => p.id !== newProj.id)];
     setProjects(updated);
     localStorage.setItem('pms_projects_list', JSON.stringify(updated));
     setIsModalOpen(false);
@@ -194,6 +201,20 @@ export const ProjectsList = () => {
     localStorage.setItem('pms_projects_list', JSON.stringify(updated));
   };
 
+  // Handle Project Deletion (Super Admin only)
+  const handleDeleteProject = async (id, code) => {
+    if (!isSuperAdmin) return;
+    if (!window.confirm(`Are you sure you want to delete project ${code || id}? This action cannot be undone.`)) return;
+
+    try {
+      await api.delete(`/projects/${id}`);
+    } catch (e) {}
+
+    const updated = projects.filter(p => p.id !== id && p.projectCode !== code);
+    setProjects(updated);
+    localStorage.setItem('pms_projects_list', JSON.stringify(updated));
+  };
+
   // Export Table to CSV / Excel Format
   const handleExportCSV = () => {
     const headers = [
@@ -208,7 +229,7 @@ export const ProjectsList = () => {
       p.clientName || p.client?.companyName || '',
       p.sourceLang,
       p.targetLang,
-      p.projectName,
+      `"${(p.projectName || '').replace(/"/g, '""')}"`,
       p.projectType,
       p.pageCount || 0,
       p.wordCount || 0,
@@ -218,7 +239,7 @@ export const ProjectsList = () => {
       p.priority,
       p.date ? new Date(p.date).toLocaleDateString() : '',
       p.deadline ? new Date(p.deadline).toLocaleDateString() : '',
-      p.translatorName || p.vendors?.[0]?.vendor?.name || 'Unassigned',
+      p.translatorName || 'Unassigned',
       p.reviewerName || 'Unassigned',
       p.clientAmount || 0,
       p.outstandingAmount || 0,
@@ -231,65 +252,67 @@ export const ProjectsList = () => {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `Projects_Export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `Translation_Projects_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  // Filter Logic
   const filteredProjects = projects.filter(p => {
-    const matchesSearch =
-      (p.projectCode && p.projectCode.toLowerCase().includes(search.toLowerCase())) ||
-      (p.projectName && p.projectName.toLowerCase().includes(search.toLowerCase())) ||
-      (p.clientName && p.clientName.toLowerCase().includes(search.toLowerCase()));
+    const t = search.toLowerCase();
+    const matchSearch = !t ||
+      p.projectName?.toLowerCase().includes(t) ||
+      p.projectCode?.toLowerCase().includes(t) ||
+      (p.clientName || p.client?.companyName)?.toLowerCase().includes(t);
 
-    const matchesStatus = !statusFilter || p.status === statusFilter;
-    const matchesPriority = !priorityFilter || p.priority === priorityFilter;
-    const matchesType = !projectTypeFilter || p.projectType === projectTypeFilter;
+    const matchStatus = !statusFilter || p.status === statusFilter;
+    const matchPriority = !priorityFilter || p.priority === priorityFilter;
+    const matchType = !typeFilter || p.projectType === typeFilter;
 
-    return matchesSearch && matchesStatus && matchesPriority && matchesType;
+    return matchSearch && matchStatus && matchPriority && matchType;
   });
+
+  const estimatedBilling = formData.rateUnit === 'Per Page'
+    ? (Number(formData.pageCount || 0) * Number(formData.ratePerWord || 0))
+    : formData.rateUnit === 'Per Hour'
+    ? (Number(formData.pageCount || formData.wordCount || 1) * Number(formData.ratePerWord || 0))
+    : (Number(formData.wordCount || 0) * Number(formData.ratePerWord || 0));
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Translation Projects Master</h1>
-          <p className="text-xs text-slate-500 font-medium mt-0.5">
-            Full enterprise operations table & multi-attribute tracking
-          </p>
+          <p className="text-xs text-slate-500 font-medium mt-0.5">Full enterprise operations table & multi-attribute tracking</p>
         </div>
         <div className="flex items-center gap-2">
           <Button onClick={handleExportCSV} variant="secondary" icon={FileSpreadsheet}>
             Export Excel (CSV)
           </Button>
           {isSuperAdmin && (
-            <Button onClick={() => setIsModalOpen(true)} icon={Plus}>
-              New Project
-            </Button>
+            <Button onClick={() => setIsModalOpen(true)} icon={Plus}>New Project</Button>
           )}
         </div>
       </div>
 
-      {/* Filter Bar */}
+      {/* Filters Bar */}
       <Card className="p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
-          <div className="relative md:col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={search}
               onChange={e => setSearch(e.target.value)}
               placeholder="Search code, name, client..."
-              className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-brand-500 font-medium"
+              className="w-full pl-9 pr-4 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-brand-500 font-medium text-slate-900"
             />
           </div>
+
           <select
             value={statusFilter}
             onChange={e => setStatusFilter(e.target.value)}
-            className="py-2 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-brand-500 font-semibold text-slate-800"
+            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-semibold text-slate-700"
           >
             <option value="">All Statuses</option>
             <option value="NEW">NEW</option>
@@ -301,10 +324,11 @@ export const ProjectsList = () => {
             <option value="ON_HOLD">ON HOLD</option>
             <option value="CANCELLED">CANCELLED</option>
           </select>
+
           <select
             value={priorityFilter}
             onChange={e => setPriorityFilter(e.target.value)}
-            className="py-2 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-brand-500 font-medium"
+            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-semibold text-slate-700"
           >
             <option value="">All Priorities</option>
             <option value="LOW">LOW</option>
@@ -312,10 +336,11 @@ export const ProjectsList = () => {
             <option value="HIGH">HIGH</option>
             <option value="URGENT">URGENT</option>
           </select>
+
           <select
-            value={projectTypeFilter}
-            onChange={e => setProjectTypeFilter(e.target.value)}
-            className="py-2 px-3 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:border-brand-500 font-medium"
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value)}
+            className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-semibold text-slate-700"
           >
             <option value="">All Service Types</option>
             <option value="Translation">Translation</option>
@@ -409,7 +434,7 @@ export const ProjectsList = () => {
                     {/* 10. Rate Unit */}
                     <td className="py-3.5 px-3 text-center">
                       <span className="bg-slate-100 text-slate-700 text-[10px] px-2 py-0.5 rounded font-semibold">
-                        {proj.rateUnit || 'Per Word'}
+                        {proj.rateUnit || (proj.ratePerPage > 0 && !proj.ratePerWord ? 'Per Page' : (proj.wordCount === 0 ? 'Per Hour' : 'Per Word'))}
                       </span>
                     </td>
 
@@ -483,13 +508,24 @@ export const ProjectsList = () => {
 
                     {/* Action */}
                     <td className="py-3.5 px-3 text-right">
-                      <Link
-                        to={`/projects/${proj.id}`}
-                        className="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-slate-100 inline-block"
-                        title="View Details"
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Link>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Link
+                          to={`/projects/${proj.id}`}
+                          className="p-1.5 text-slate-400 hover:text-brand-600 rounded-lg hover:bg-slate-100 transition-colors"
+                          title="View Details"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        {isSuperAdmin && (
+                          <button
+                            onClick={() => handleDeleteProject(proj.id, proj.projectCode)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors"
+                            title="Delete Project (Super Admin Only)"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -569,7 +605,9 @@ export const ProjectsList = () => {
 
           <div className="grid grid-cols-4 gap-3">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Total Words</label>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                {formData.rateUnit === 'Per Hour' ? 'Total Hours' : 'Total Words'}
+              </label>
               <input
                 type="number"
                 value={formData.wordCount}
@@ -610,40 +648,19 @@ export const ProjectsList = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Translator</label>
-              <input
-                type="text"
-                value={formData.translatorName}
-                onChange={e => setFormData({ ...formData, translatorName: e.target.value })}
-                placeholder="e.g. Hans Gruber"
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-slate-900"
-              />
+          {/* Live Billing Calculation Preview */}
+          <div className="bg-slate-900 text-white p-3.5 rounded-xl text-xs space-y-1.5 font-mono shadow-inner">
+            <div className="flex justify-between text-slate-400">
+              <span>Billing Unit Method:</span>
+              <span className="font-bold text-brand-400">{formData.rateUnit || 'Per Word'}</span>
             </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Assigned Reviewer</label>
-              <input
-                type="text"
-                value={formData.reviewerName}
-                onChange={e => setFormData({ ...formData, reviewerName: e.target.value })}
-                placeholder="e.g. Anna Schmidt"
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-slate-900"
-              />
+            <div className="flex justify-between font-bold text-sm text-white pt-1.5 border-t border-slate-800">
+              <span>Estimated Client Billing Amount:</span>
+              <span className="text-emerald-400">₹{estimatedBilling.toLocaleString('en-IN')}</span>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">Due Date *</label>
-              <input
-                type="date"
-                required
-                value={formData.deadline}
-                onChange={e => setFormData({ ...formData, deadline: e.target.value })}
-                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-slate-900"
-              />
-            </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1">Priority</label>
               <select
@@ -657,22 +674,36 @@ export const ProjectsList = () => {
                 <option value="URGENT">URGENT</option>
               </select>
             </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">Delivery Deadline *</label>
+              <input
+                type="date"
+                required
+                value={formData.deadline}
+                onChange={e => setFormData({ ...formData, deadline: e.target.value })}
+                className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-slate-900"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 mb-1">Special Notes / Instructions</label>
+            <label className="block text-xs font-bold text-slate-700 mb-1">Notes / Instructions</label>
             <textarea
               rows={2}
               value={formData.notes}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="e.g. Deliver as certified PDF with stamp."
-              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none font-medium text-slate-900"
+              placeholder="Special instructions..."
+              className="w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none text-slate-900"
             />
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={submitting}>Create Project</Button>
+            <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" loading={submitting}>
+              Create Project (₹{estimatedBilling.toLocaleString('en-IN')})
+            </Button>
           </div>
         </form>
       </Modal>
